@@ -107,6 +107,8 @@ func (r *Runner) Run(ctx context.Context, userID, sessionID string, msg *genai.C
 		}
 
 		session := resp.Session
+		email, _ := ctx.Value(icontext.AuthenticatedUserEmailKey).(string)
+		log.Printf("session id: %s, user id: %s, email: %s", session.ID(), userID, email)
 
 		agentToRun, err := r.findAgentToRun(session)
 		if err != nil {
