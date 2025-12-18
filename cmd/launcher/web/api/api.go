@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -109,11 +110,21 @@ func NewLauncher() weblauncher.Sublauncher {
 	config := &apiConfig{}
 
 	fs := flag.NewFlagSet("web", flag.ContinueOnError)
-	fs.StringVar(&config.frontendAddress, "webui_address", "localhost:8080", "ADK WebUI address as seen from the user browser. It's used to allow CORS requests. Please specify only hostname and (optionally) port.")
+	fs.StringVar(&config.frontendAddress, "webui_address", "", "ADK WebUI address as seen from the user browser. It's used to allow CORS requests. Please specify only hostname and (optionally) port.")
 	fs.DurationVar(&config.sseWriteTimeout, "sse-write-timeout", 120*time.Second, "SSE server write timeout (i.e. '10s', '2m' - see time.ParseDuration for details) - for writing the SSE response after reading the headers & body")
 
-	return &apiLauncher{
+	launcher := &apiLauncher{
 		config: config,
 		flags:  fs,
 	}
+	fs.Parse(os.Args[1:])
+	if config.frontendAddress == "" {
+		appURL := os.Getenv("APPLICATION_URL")
+		if appURL != "" {
+			config.frontendAddress = appURL
+		} else {
+			config.frontendAddress = "localhost:8080"
+		}
+	}
+	return launcher
 }

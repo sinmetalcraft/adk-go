@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 
@@ -118,11 +119,21 @@ func NewLauncher() weblauncher.Sublauncher {
 	config := &webUIConfig{}
 
 	fs := flag.NewFlagSet("webui", flag.ContinueOnError)
-	fs.StringVar(&config.backendAddress, "api_server_address", "http://localhost:8080/api", "ADK REST API server address as seen from the user browser. Please specify the whole URL, i.e. 'http://localhost:8080/api'.")
+	fs.StringVar(&config.backendAddress, "api_server_address", "", "ADK REST API server address as seen from the user browser. Please specify the whole URL, i.e. 'http://localhost:8080/api'.")
 	config.pathPrefix = "/ui/"
 
-	return &webUILauncher{
+	launcher := &webUILauncher{
 		config: config,
 		flags:  fs,
 	}
+	fs.Parse(os.Args[1:])
+	if config.backendAddress == "" {
+		appURL := os.Getenv("APPLICATION_URL")
+		if appURL != "" {
+			config.backendAddress = "https://" + appURL + "/api"
+		} else {
+			config.backendAddress = "http://localhost:8080/api"
+		}
+	}
+	return launcher
 }
