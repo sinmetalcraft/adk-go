@@ -26,6 +26,7 @@ import (
 	"google.golang.org/adk/runner"
 	"google.golang.org/adk/server/adkrest/internal/models"
 	"google.golang.org/adk/session"
+	adkcontext "google.golang.org/adk/internal/context"
 )
 
 // RuntimeAPIController is the controller for the Runtime API.
@@ -47,7 +48,8 @@ func (c *RuntimeAPIController) RunHandler(rw http.ResponseWriter, req *http.Requ
 	if err != nil {
 		return err
 	}
-	sessionEvents, err := c.runAgent(req.Context(), runAgentRequest)
+	ctx := context.WithValue(req.Context(), adkcontext.AuthenticatedUserEmailKey, req.Header.Get("x-goog-authenticated-user-email"))
+	sessionEvents, err := c.runAgent(ctx, runAgentRequest)
 	if err != nil {
 		return err
 	}
@@ -102,7 +104,8 @@ func (c *RuntimeAPIController) RunSSEHandler(rw http.ResponseWriter, req *http.R
 		return err
 	}
 
-	err = c.validateSessionExists(req.Context(), runAgentRequest.AppName, runAgentRequest.UserId, runAgentRequest.SessionId)
+	ctx := context.WithValue(req.Context(), adkcontext.AuthenticatedUserEmailKey, req.Header.Get("x-goog-authenticated-user-email"))
+	err = c.validateSessionExists(ctx, runAgentRequest.AppName, runAgentRequest.UserId, runAgentRequest.SessionId)
 	if err != nil {
 		return err
 	}
@@ -112,7 +115,7 @@ func (c *RuntimeAPIController) RunSSEHandler(rw http.ResponseWriter, req *http.R
 		return err
 	}
 
-	resp := r.Run(req.Context(), runAgentRequest.UserId, runAgentRequest.SessionId, &runAgentRequest.NewMessage, *rCfg)
+	resp := r.Run(ctx, runAgentRequest.UserId, runAgentRequest.SessionId, &runAgentRequest.NewMessage, *rCfg)
 
 	rw.WriteHeader(http.StatusOK)
 	for event, err := range resp {
